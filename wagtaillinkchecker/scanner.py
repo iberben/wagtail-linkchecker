@@ -1,8 +1,6 @@
 import requests
 from django.utils.translation import gettext_lazy as _
 
-from siacms.celery import app
-
 from http import HTTPStatus
 from .models import Scan
 
@@ -10,9 +8,10 @@ from .models import Scan
 def get_celery_worker_status():
     ERROR_KEY = "ERROR"
     try:
-        from celery.app.control import Control
-        insp = Control(app).inspect()
+        from celery.task.control import inspect
+        insp = inspect()
         d = insp.stats()
+
         if not d:
             d = {ERROR_KEY: 'No running Celery workers were found.'}
     except IOError as e:
