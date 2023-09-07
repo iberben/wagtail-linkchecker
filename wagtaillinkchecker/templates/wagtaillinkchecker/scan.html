@@ -1,47 +1,77 @@
 {% extends "wagtailadmin/base.html" %}
-{% load i18n %}
+{% load i18n wagtailadmin_tags %}
 {% block titletag %}{% trans "Link Checker Results" %}{% endblock %}
 {% block bodyclass %}menu-linkchecker{% endblock %}
 {% block content %}
 
-    {% include "wagtailadmin/shared/header.html" with title="Link Checker" icon="link" %}
+{% include "wagtailadmin/shared/header.html" with title="Link Checker" icon="link" %}
 
-    <div class="nice-padding">
+	<div class="nice-padding">
+		<a href="{% url 'wagtaillinkchecker' %}" class="button bicolor icon icon-arrow-left">{% blocktrans %}Back{% endblocktrans %}</a>
+		<br/><br/>
+
+		{% blocktrans with scan.links.broken_links|length as links_count asvar title_trans %}Broken links ({{ links_count }}){% endblocktrans %}
+		{% panel id="broken-links" heading=title_trans %}
+			{% if scan.links.broken_links.exists %}
+			<table class="listing">
+				<thead>
+					<tr>
+						<th>{% trans "Link" %}</th>
+						<th>{% trans "Status code" %}</th>
+						<th>{% trans "Error text" %}</th>
+						<th>{% trans "Actions" %}</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for link in scan.links.broken_links.all %}
+					<tr>
+						<td><a href="{{ link }}" target="_blank">{{ link }}</a></td>
+						<td>{% if link.status_code %}{{ link.status_code }}{% endif %}</td>
+						<td>{% if link.error_text %}<b>{% blocktrans %}Error{% endblocktrans %}: </b>{{ link.error_text }}{% endif %}</td>
+						<td>{% if link.page %}<a href="{% url 'wagtailadmin_pages:edit' link.page.id %}" target="_blank" class="button button-small">{% blocktrans %}Edit page containing this link{% endblocktrans %}</a>{% endif %}</td>
+						<td>{% if link.page_is_deleted %}<b>{% blocktrans %}Info: </b>PAGE CONTAINING THIS LINK WAS DELETED{% endblocktrans %}{% endif %}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			{% else %}
+			<p>{% blocktrans %}Congratulations, there are no broken links!{% endblocktrans %}</p>
+			{% endif %}
+		{% endpanel %}
+
 		{% if scan.links.non_scanned_links.exists %}
-		<h2>{% blocktrans %}Links To Be Scanned {% endblocktrans %}</h2>
-		{% for link in scan.links.non_scanned_links %}
-		<p>
-			<a href='{{link}}' target="_blank">{{link}}</a>{% if link.page_is_deleted %} - {% blocktrans %}PAGE CONTAINING LINK WAS DELETED{% endblocktrans %}{% endif %}
-		</p>
-		{% endfor %}
-		{% endif %}
-		<h2>{% blocktrans %}Results{% endblocktrans %}</h2>
-		<hr />
-		<h2>{% blocktrans %}Broken Links{% endblocktrans %}</h2>
-		{% if scan.links.broken_links.exists %}
-		{% for link in scan.links.broken_links.all %}
-		<p>
-			<a href='{{link}}' target="_blank">{{link}}</a>{% if link.page %} - <a href="{% url 'wagtailadmin_pages:edit' link.page.id %}" target="_blank" class="button button-small">{% blocktrans %}Edit page containing this link{% endblocktrans %}</a>{% endif %}
-			{% if link.status_code %}<br /><b>{% blocktrans %}Status Code{% endblocktrans %}: </b>{{link.status_code}}{% endif %}
-			{% if link.error_text %}<br /><b>{% blocktrans %}Error{% endblocktrans %}: </b>{{link.error_text}}{% endif %}
-			{% if link.page_is_deleted %}<br /><b>{% blocktrans %}Info: </b>PAGE CONTAINING THIS LINK WAS DELETED{% endblocktrans %}{% endif %}
-		</p>
-		{% endfor %}
-		{% else %}
-		<p>{% blocktrans %}Congratulations, there are no broken links!{% endblocktrans %}</p>
+			{% blocktrans with scan.links.non_scanned_links|length as links_count asvar title_trans %}Links To Be Scanned ({{ links_count }}){% endblocktrans %}
+			{% panel id="links-to-be-scanned" heading=title_trans %}
+
+			<ul>
+				{% for link in scan.links.non_scanned_links %}
+				<li><a href='{{link}}' target="_blank">{{link}}</a>{% if link.page_is_deleted %} - {% blocktrans %}PAGE CONTAINING LINK WAS DELETED{% endblocktrans %}{% endif %}</li>
+				{% endfor %}
+			</ul>
+			{% endpanel %}
 		{% endif %}
 
-		<h2>Working Links</h2>
-		{% if scan.links.working_links.exists %}
-		{% for link in scan.links.working_links.all %}
-		<p>
-			<a href='{{link}}' target="_blank">{{link}}</a>{% if link.page_is_deleted %} - {% blocktrans %}PAGE CONTAINING LINK WAS DELETED {% endblocktrans %}{% endif %}
-		</p>
-		{% endfor %}
-		{% else %}
-		<p>{% blocktrans %}There are no working links!{% endblocktrans %}</p>
-		{% endif %}
-
-        <a href="{% url 'wagtaillinkchecker' %}" class="button bicolor icon icon-arrow-left">{% blocktrans %}Back{% endblocktrans %}</a>
+		{% blocktrans with scan.links.working_links|length as links_count asvar title_trans %}Working links ({{ links_count }}){% endblocktrans %}
+		{% panel id="working-links" heading=title_trans %}
+			{% if scan.links.working_links.exists %}
+			<ul>
+				{% for link in scan.links.working_links.all %}
+				<li>
+					<a href='{{link}}' target="_blank">{{link}}</a>{% if link.page_is_deleted %} - {% blocktrans %}PAGE CONTAINING LINK WAS DELETED {% endblocktrans %}{% endif %}
+				</li>
+				{% endfor %}
+			</ul>
+			{% else %}
+			<p>{% blocktrans %}There are no working links!{% endblocktrans %}</p>
+			{% endif %}
+		{% endpanel %}
     </div>
+
+	<script type="text/javascript">
+		$(document).ready(function() {
+			$('#links-to-be-scanned-section h2').trigger('click');
+			$('#working-links-section h2').trigger('click');
+		});
+	</script>
 {% endblock %}
